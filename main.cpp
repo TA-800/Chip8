@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <SFML/Graphics.hpp>
 
 uint16_t characters[16 * 5] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -22,6 +23,8 @@ uint16_t characters[16 * 5] = {
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
+
+constexpr uint8_t SCALE = 10;
 
 typedef struct hardware {
     // Order from smallest to biggest for alignment
@@ -76,13 +79,40 @@ void Execute() {
     std::cout << "Executing..." << std::endl;
 }
 
-void GameLoop(const uint8_t ups) {
+void Draw(const std::bitset<2048> & display, sf::RenderWindow & window) {
+    // Loop through the display pixel 2D array and draw it to the SFML window (and scale it up)
+    window.clear(sf::Color::Black);
+    // 64 x 32 -> Rows: i = 0 to 32 (height), Columns: j = 0 to 64 (width)
+    for (uint8_t i = 0; i < 32; i++) {
+        for (uint8_t j = 0; j < 64; j++) {
+            if (display[i * 64 + j]) {
+                // Draw to hidden buffer
+                sf::RectangleShape rectangle;
+                rectangle.setSize(sf::Vector2f(SCALE, SCALE));
+                rectangle.setFillColor(sf::Color::White);
+                rectangle.setPosition(sf::Vector2f(j * SCALE, i * SCALE));
+                window.draw(rectangle);
+            }
+        }
+    }
+    // Copy buffer to window (double-buffering)
+    window.display();
+}
+
+
+void GameLoop(const uint8_t ups, Chip8 &chip8) {
+    sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
+
     const float time_between_updates = 1.0 / ups;
-    while (true) {
+    while (window.isOpen()) {
+
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
         // Fetch();
         // Decode();
-        Execute();
+        // Execute();
+        Draw(chip8.display, window);
+
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed_time = end - start;
 
@@ -98,11 +128,11 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    std::string rom_file = argv[1];
-    uint8_t ups = atoi(argv[2]); // 12-16
+    const std::string rom_file = argv[1];
+    const uint8_t ups = atoi(argv[2]); // 12-16 updates (fetch-decode-execute) per second
 
     Chip8 chip8;
     LoadFontsIntoMemory(chip8.memory);
     LoadRomIntoMemory(chip8.memory, rom_file);
-    GameLoop(ups);
+    GameLoop(ups, chip8);
 }
