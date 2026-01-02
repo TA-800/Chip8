@@ -1,5 +1,4 @@
 # Clion specific files
 .idea
-# All test files
-*.ch8
-*.exe
+
+roms
