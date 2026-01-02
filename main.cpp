@@ -78,10 +78,7 @@ void Execute() {
 
 void GameLoop(const uint8_t ups) {
     const float time_between_updates = 1.0 / ups;
-    const auto gameLoopStart{std::chrono::steady_clock::now()};
-    std::chrono::duration<double> gameLoopDuration{0.0};
-    // Test if ups * 5 updates (here, Execute()'s) are executed in total
-    while (gameLoopDuration.count() < 5.0) {
+    while (true) {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         // Fetch();
         // Decode();
@@ -92,8 +89,6 @@ void GameLoop(const uint8_t ups) {
         while (elapsed_time.count() < time_between_updates) {
             elapsed_time = std::chrono::steady_clock::now() - start;
         }
-
-        gameLoopDuration = std::chrono::steady_clock::now() - gameLoopStart;
     }
 }
 
