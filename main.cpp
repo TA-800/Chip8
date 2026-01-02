@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <thread>
 #include <SFML/Graphics.hpp>
 
 uint16_t characters[16 * 5] = {
@@ -103,7 +104,9 @@ void Draw(const std::bitset<2048> & display, sf::RenderWindow & window) {
 void GameLoop(const uint8_t ups, Chip8 &chip8) {
     sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
 
-    const float time_between_updates = 1.0 / ups;
+    // By default, chrono::duration is in seconds
+    // <double> -> representation
+    const auto time_between_updates = std::chrono::duration<double>(1.0 / ups);
     while (window.isOpen()) {
 
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -114,10 +117,9 @@ void GameLoop(const uint8_t ups, Chip8 &chip8) {
         Draw(chip8.display, window);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        std::chrono::duration<double> elapsed_time = end - start;
-
-        while (elapsed_time.count() < time_between_updates) {
-            elapsed_time = std::chrono::steady_clock::now() - start;
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        while (elapsed_seconds < time_between_updates) {
+            elapsed_seconds = std::chrono::steady_clock::now() - start;
         }
     }
 }
