@@ -57,10 +57,90 @@ size_t LoadRomIntoMemory(Chip8 &chip8, const std::string& rom_file) {
     return size;
 }
 
+void FetchDecodeExecute(Chip8 &chip8, const double hz) {
+    // Fetch
+    const uint8_t byte1 = chip8.memory[chip8.programCounter];
+    const uint8_t byte2 = chip8.memory[chip8.programCounter + 1];
+    chip8.programCounter += 2;
 
-void Execute(const double hz) {
+    // Decode
+    // 00E0 (example) => 0 0 E 0 => 0000 0000 1110 0000
+    // 0b1111 => 0000 0000 0000 1111 << 4 => 0000 0000 1111 0000 << 4 => 0000 1111 0000 0000 << 4 => 1111 0000 0000 0000
+    // '0'0E0 & 0b1111 << (4 * 3) => 0 (first number)
+    // These are 4 bits long only but smallest datatype is uint8_t
+    const uint8_t byte1Half1 = ( byte1 & (0b11110000) ) >> 4;
+    const uint8_t byte1Half2 = byte1 & (0b00001111);
+    const uint8_t byte2Half1 = ( byte2 & (0b11110000) ) >> 4;
+    const uint8_t byte2Half2 = byte2 & (0b00001111);
 
-    // Read two bytes
+    // Execute
+    // TODO: Decrement timers by hz
+    switch (byte1Half1) {
+        case 0:
+            switch (byte2Half2) {
+                case 0:
+                    // Clear screen
+                    chip8.display.reset();
+                    break;
+                case 0xE:
+                    // Return from subroutine
+                    chip8.programCounter = chip8.sp;
+                    chip8.sp -= 1;
+                    break;
+            }
+            break;
+        case 1:
+{
+            const uint16_t jumpTo = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
+            chip8.programCounter = jumpTo;
+            break;
+ }
+        case 6:
+            chip8.registers[byte1Half2] = (byte2Half1 << 4) | (byte2Half2);
+            break;
+        case 7:
+            chip8.registers[byte1Half2] += (byte2Half1 << 4) | (byte2Half2);
+            break;
+        case 0xA:
+            chip8.index = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
+            break;
+        case 0xD:
+{
+            // Readability
+            uint8_t x = chip8.registers[byte1Half2] & 63;
+            uint8_t y = chip8.registers[byte2Half1] & 31;
+            chip8.registers[0xF] = 0;
+            const uint8_t n = byte2Half2;
+
+            for (uint8_t i = 0; i < n; i++) {
+                const uint8_t nthByteSpriteData = chip8.memory[chip8.index + i];
+                for (uint8_t j = 0; j < 8; j++) {
+                    const uint8_t currentPixel = nthByteSpriteData & (0b1 << (7 - j));
+                    if (currentPixel == 1) {
+                        if (chip8.display.test( y * 64 + x )) {
+                            chip8.display.reset(y * 64 + x);
+                            chip8.registers[0xF] = 1;
+                        } else {
+                            chip8.display.set(y * 64 + x);
+                        }
+                        x++;
+                        if (x >= 64) {
+                            break;
+                        }
+                    }
+                }
+                y++;
+                if (y >= 32) {
+                    break;
+                }
+            }
+            break;
+ }
+        default:
+            break;
+
+    }
+
 }
 
 void Draw(const std::bitset<2048> & display, sf::RenderWindow & window) {
@@ -103,8 +183,7 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
         const auto hz = 60 * deltaTime.count();
 
         // Fetch();
-        // Decode();
-        Execute(hz);
+        FetchDecodeExecute(chip8, hz);
         Draw(chip8.display, window);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
