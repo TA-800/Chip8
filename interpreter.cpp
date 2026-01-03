@@ -22,7 +22,7 @@ uint16_t characters[16 * 5] = {
     0xF0, 0x80, 0x80, 0x80, 0xF0, // C
     0xE0, 0x90, 0x90, 0x90, 0xE0, // D
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    0xF0, 0x80, 0xF0, 0x80, 0x80 // F
 };
 
 // For example, the character F is 0xF0, 0x80, 0xF0, 0x80, 0x80. Binary representation:
@@ -39,8 +39,8 @@ void LoadFontsIntoMemory(Chip8 &chip8) {
     }
 }
 
-size_t LoadRomIntoMemory(Chip8 &chip8, const std::string& rom_file) {
-    std::ifstream rom  (rom_file, std::ios::binary);
+size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file) {
+    std::ifstream rom(rom_file, std::ios::binary);
     if (!rom.is_open()) {
         std::cout << "Failed to read file" << std::endl;
         exit(1);
@@ -68,9 +68,9 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
     // 0b1111 => 0000 0000 0000 1111 << 4 => 0000 0000 1111 0000 << 4 => 0000 1111 0000 0000 << 4 => 1111 0000 0000 0000
     // '0'0E0 & 0b1111 << (4 * 3) => 0 (first number)
     // These are 4 bits long only but smallest datatype is uint8_t
-    const uint8_t byte1Half1 = ( byte1 & (0b11110000) ) >> 4;
+    const uint8_t byte1Half1 = (byte1 & (0b11110000)) >> 4;
     const uint8_t byte1Half2 = byte1 & (0b00001111);
-    const uint8_t byte2Half1 = ( byte2 & (0b11110000) ) >> 4;
+    const uint8_t byte2Half1 = (byte2 & (0b11110000)) >> 4;
     const uint8_t byte2Half2 = byte2 & (0b00001111);
 
     // Execute
@@ -89,12 +89,11 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
                     break;
             }
             break;
-        case 1:
-{
+        case 1: {
             const uint16_t jumpTo = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             chip8.programCounter = jumpTo;
             break;
- }
+        }
         case 6:
             chip8.registers[byte1Half2] = (byte2Half1 << 4) | (byte2Half2);
             break;
@@ -104,8 +103,7 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
         case 0xA:
             chip8.index = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             break;
-        case 0xD:
-{
+        case 0xD: {
             // Readability
             uint8_t x = chip8.registers[byte1Half2] & 63;
             uint8_t y = chip8.registers[byte2Half1] & 31;
@@ -115,9 +113,9 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
             for (uint8_t i = 0; i < n; i++) {
                 const uint8_t nthByteSpriteData = chip8.memory[chip8.index + i];
                 for (uint8_t j = 0; j < 8; j++) {
-                    const uint8_t currentPixel = nthByteSpriteData & (0b1 << (7 - j));
+                    const uint8_t currentPixel = (nthByteSpriteData & (0b1 << (7 - j))) >> (7 - j);
                     if (currentPixel == 1) {
-                        if (chip8.display.test( y * 64 + x )) {
+                        if (chip8.display.test(y * 64 + x)) {
                             chip8.display.reset(y * 64 + x);
                             chip8.registers[0xF] = 1;
                         } else {
@@ -135,15 +133,13 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
                 }
             }
             break;
- }
+        }
         default:
             break;
-
     }
-
 }
 
-void Draw(const std::bitset<2048> & display, sf::RenderWindow & window) {
+void Draw(const std::bitset<2048> &display, sf::RenderWindow &window) {
     // Loop through the display pixel 2D array and draw it to the SFML window (and scale it up)
     window.clear(sf::Color::Black);
     // 64 x 32 -> Rows: i = 0 to 32 (height), Columns: j = 0 to 64 (width)
@@ -163,8 +159,6 @@ void Draw(const std::bitset<2048> & display, sf::RenderWindow & window) {
     // Copy buffer to window (double-buffering)
     window.display();
 }
-
-
 
 
 void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
