@@ -2,6 +2,8 @@
 #include <iostream>
 #include "interpreter.h"
 
+// test roms: https://github.com/Timendus/chip8-test-suite
+
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         std::cout << "Usage: " << argv[0] << " <rom file> <updates per second>" << std::endl;

@@ -94,23 +94,59 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz)
         case 0:
             switch (byte2Half2)
             {
+                // CLEAR SCREEN
                 case 0:
-                    // Clear screen
                     chip8.display.reset();
                     break;
+                // RETURN FROM SUBROUTINE
                 case 0xE:
-                    // Return from subroutine
-                    chip8.programCounter = chip8.sp;
                     chip8.sp -= 1;
+                    chip8.programCounter = chip8.stack[chip8.sp];
                     break;
                 default:
                     UnknownInstruction(byte1, byte2);
             }
             break;
+        // JUMP
         case 1:
         {
             const uint16_t jumpTo = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             chip8.programCounter = jumpTo;
+            break;
+        }
+        // SUBROUTINE
+        case 2:
+        {
+            const uint16_t jumpTo = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
+            chip8.stack[chip8.sp] = chip8.programCounter;
+            chip8.sp++;
+            chip8.programCounter = jumpTo;
+            break;
+        }
+        case 3:
+        {
+            const uint8_t nn = (byte2Half1 << 4) | byte2Half2;
+            if (chip8.registers[byte1Half2] == nn)
+            {
+                chip8.programCounter += 2;
+            }
+            break;
+        }
+        case 4:
+        {
+            const uint8_t nn = (byte2Half1 << 4) | byte2Half2;
+            if (chip8.registers[byte1Half2] != nn)
+            {
+                chip8.programCounter += 2;
+            }
+            break;
+        }
+        case 5:
+        {
+            if (chip8.registers[byte1Half1] == chip8.registers[byte2Half1])
+            {
+                chip8.programCounter += 2;
+            }
             break;
         }
         case 6:
@@ -119,6 +155,60 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz)
         case 7:
             chip8.registers[byte1Half2] += (byte2Half1 << 4) | (byte2Half2);
             break;
+        // ARITHMETIC / LOGICAL OPERATIONS
+        case 8:
+        {
+            switch (byte2Half2)
+            {
+                case 0:
+                    chip8.registers[byte1Half2] = chip8.registers[byte2Half1];
+                    break;
+                case 1:
+                    chip8.registers[byte1Half2] |= chip8.registers[byte2Half1];
+                    break;
+                case 2:
+                    chip8.registers[byte1Half2] &= chip8.registers[byte2Half1];
+                    break;
+                case 3:
+                    chip8.registers[byte1Half2] ^= chip8.registers[byte2Half1];
+                    break;
+                case 4:
+                {
+                    const uint8_t originalXValue = chip8.registers[byte1Half2];
+                    chip8.registers[byte1Half2] += chip8.registers[byte2Half1];
+                    // Check for overflow reference: https://stackoverflow.com/questions/33948450/detecting-if-an-unsigned-integer-overflow-has-occurred-when-adding-two-numbers
+                    chip8.registers[0xF] = chip8.registers[byte1Half2] < originalXValue ? 1 : 0;
+                    break;
+                }
+                // VX - VY
+                case 5:
+                {
+                    const uint8_t vx = chip8.registers[byte1Half2];
+                    const uint8_t vy = chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = vx > vy ? 1 : 0;
+                    chip8.registers[byte1Half2] = vx - vy;
+                    break;
+                }
+                // VY - VX
+                case 7:
+                {
+                    const uint8_t vx = chip8.registers[byte1Half2];
+                    const uint8_t vy = chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = vy - vx ? 1 : 0;
+                    chip8.registers[byte1Half2] = vy - vx;
+                    break;
+                }
+                default: UnknownInstruction(byte1, byte2);
+            }
+        }
+        case 9:
+        {
+            if (chip8.registers[byte1Half1] != chip8.registers[byte2Half1])
+            {
+                chip8.programCounter += 2;
+            }
+            break;
+        }
         case 0xA:
             chip8.index = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             break;
