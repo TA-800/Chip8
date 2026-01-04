@@ -450,7 +450,7 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
 
     // Use a bool array to keep track of keys being pressed
     std::bitset<16> keypad{};
-    const auto onKeyPress = [&window, &keypad](const sf::Event::KeyPressed &event)
+    const auto onKeyPress = [&keypad](const sf::Event::KeyPressed &event)
     {
         keypad.reset();
         if (event.scancode == sf::Keyboard::Scan::Num1)
