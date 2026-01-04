@@ -147,11 +147,11 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz)
                         {
                             chip8.display.set(y * 64 + x);
                         }
-                        x++;
-                        if (x >= 64)
-                        {
-                            break;
-                        }
+                    }
+                    x++;
+                    if (x >= 64)
+                    {
+                        break;
                     }
                 }
                 y++;
