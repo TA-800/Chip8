@@ -2,6 +2,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <thread>
 #include <SFML/Graphics.hpp>
 
@@ -70,7 +71,7 @@ void UnknownInstruction(const uint8_t byte1, const uint8_t byte2)
     exit(1);
 }
 
-void FetchDecodeExecute(Chip8 &chip8, const double hz)
+void FetchDecodeExecute(Chip8 &chip8, const Params &params, const double hz)
 {
     // Fetch
     const uint8_t byte1 = chip8.memory[chip8.programCounter];
@@ -189,6 +190,32 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz)
                     chip8.registers[byte1Half2] = vx - vy;
                     break;
                 }
+                // RIGHT SHIFT 1 bit
+                case 6:
+                {
+                    if (params.shift)
+                    {
+                        chip8.registers[byte1Half2] = chip8.registers[byte2Half1];
+                    }
+
+                    const uint8_t value = chip8.registers[byte1Half2];
+                    chip8.registers[0xF] = value & 0b1;
+                    chip8.registers[byte1Half2] = value >> 1;
+                    break;
+                }
+                // LEFT SHIFT 1 bit
+                case 0xE:
+                {
+                    if (params.shift)
+                    {
+                        chip8.registers[byte1Half2] = chip8.registers[byte2Half1];
+                    }
+
+                    const uint8_t value = chip8.registers[byte1Half2];
+                    chip8.registers[0xF] = value & 0b10000000;
+                    chip8.registers[byte1Half2] = value << 1;
+                    break;
+                }
                 // VY - VX
                 case 7:
                 {
@@ -212,9 +239,27 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz)
         case 0xA:
             chip8.index = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             break;
+        // JUMP WITH OFFSET
+        case 0xB:
+        {
+            const uint16_t jumpTo = ((byte1Half2 << 8) | byte2Half1 << 4) | byte2Half2;
+            const uint8_t offset = params.jumpWithOffset ? chip8.registers[byte1Half2] : 0;
+            chip8.programCounter = jumpTo + offset;
+            break;
+        }
+        // RANDOM
+        case 0xC:
+        {
+            const uint8_t nn = (byte2Half1 << 4) | byte2Half2;
+            std::mt19937 randomEngine(std::random_device{}());
+            std::uniform_int_distribution<uint8_t> distribution(0, 255);
+            uint8_t randomNumber = distribution(randomEngine);
+            randomNumber &= nn;
+            chip8.registers[byte1Half2] = randomNumber;
+        }
+        // DRAW
         case 0xD:
         {
-            // Readability
             uint8_t x = chip8.registers[byte1Half2] & 63;
             uint8_t y = chip8.registers[byte2Half1] & 31;
             chip8.registers[0xF] = 0;
@@ -285,7 +330,7 @@ void Draw(const std::bitset<2048> &display, sf::RenderWindow &window)
 }
 
 
-void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8)
+void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &params)
 {
     sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
 
@@ -302,7 +347,7 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8)
         // Timer is decremented at 60Hz
         const auto hz = 60 * deltaTime.count();
 
-        FetchDecodeExecute(chip8, hz);
+        FetchDecodeExecute(chip8, params, hz);
         Draw(chip8.display, window);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

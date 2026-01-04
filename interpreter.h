@@ -7,7 +7,8 @@ constexpr uint8_t SCALE = 10;
 constexpr uint8_t FONT_ADDRESS_START = 0x50;
 constexpr uint16_t ROM_ADDRESS_START = 0x200;
 
-typedef struct hardware {
+typedef struct hardware
+{
     // Order from smallest to biggest for alignment
     uint8_t memory[4096]{};
     // 64 x 32 pixels black or white
@@ -27,8 +28,17 @@ typedef struct hardware {
     uint8_t soundTimer{};
 } Chip8;
 
+// Configuration parameters for execution if any
+typedef struct params
+{
+    bool shift = false;
+    bool jumpWithOffset = false;
+} Params;
+
 void LoadFontsIntoMemory(Chip8 &chip8);
-size_t LoadRomIntoMemory(Chip8 &chip8, const std::string& rom_file);
-void InitializeLoopWithRendering(uint8_t ups, Chip8 &chip8);
+
+size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file);
+
+void InitializeLoopWithRendering(uint8_t ups, Chip8 &chip8, const Params &params);
 
 #endif //INTERPRETER_H
