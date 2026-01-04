@@ -373,7 +373,13 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                 // BINARY-CODED DECIMAL CONVERSION
                 case 0x33:
                 {
-                    // TODO:
+                    const uint8_t number = chip8.registers[byte1Half2];
+                    const uint8_t hundreds = number / 100;
+                    const uint8_t tens = (number % 100) / 10;
+                    const uint8_t ones = number % 10;
+                    chip8.memory[chip8.index] = hundreds;
+                    chip8.memory[chip8.index + 1] = tens;
+                    chip8.memory[chip8.index + 2] = ones;
                     break;
                 }
                 // STORE AND LOAD MEM
