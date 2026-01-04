@@ -89,7 +89,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
     const uint8_t byte2Half2 = byte2 & (0b00001111);
 
     // Execute
-    // TODO: Decrement timers by hz
+    chip8.delayTimer -= hz;
+    chip8.soundTimer -= hz;
     switch (byte1Half1)
     {
         case 0:
@@ -230,7 +231,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
         }
         case 9:
         {
-            if (chip8.registers[byte1Half1] != chip8.registers[byte2Half1])
+            if (chip8.registers[byte1Half2] != chip8.registers[byte2Half1])
             {
                 chip8.programCounter += 2;
             }

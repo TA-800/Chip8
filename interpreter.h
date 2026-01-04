@@ -23,9 +23,9 @@ typedef struct hardware
     // Index register
     uint16_t index{};
     // Delay timer decremented at 60Hz until it reaches 0
-    uint8_t delayTimer{};
+    double delayTimer{};
     // Sound timer that gives off beeping sound as long as it's not 0
-    uint8_t soundTimer{};
+    double soundTimer{};
 } Chip8;
 
 // Configuration parameters for execution if any
