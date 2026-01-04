@@ -71,7 +71,7 @@ void UnknownInstruction(const uint8_t byte1, const uint8_t byte2)
     exit(1);
 }
 
-void FetchDecodeExecute(Chip8 &chip8, const Params &params, const double hz)
+void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Params &params, const double hz)
 {
     // Fetch
     const uint8_t byte1 = chip8.memory[chip8.programCounter];
@@ -298,6 +298,114 @@ void FetchDecodeExecute(Chip8 &chip8, const Params &params, const double hz)
             }
             break;
         }
+        // SKIP IF KEY
+        case 0xE:
+            switch (byte2Half1)
+            {
+                case 0x9:
+                {
+                    const uint8_t key = chip8.registers[byte1Half2];
+                    if (keypad.test(key))
+                    {
+                        chip8.programCounter += 2;
+                    }
+                    break;
+                }
+                case 0xA:
+                {
+                    const uint8_t key = chip8.registers[byte1Half2];
+                    if (!keypad.test(key))
+                    {
+                        chip8.programCounter += 2;
+                    }
+                    break;
+                }
+                default:
+                    UnknownInstruction(byte1, byte2);
+            }
+            break;
+        case 0xF:
+            switch (byte2)
+            {
+                // TIMERS
+                case 0x07:
+                    chip8.registers[byte1Half2] = chip8.delayTimer;
+                    break;
+                case 0x15:
+                    chip8.delayTimer = chip8.registers[byte1Half2];
+                    break;
+                case 0x18:
+                    chip8.soundTimer = chip8.registers[byte1Half2];
+                    break;
+                // ADD TO INDEX
+                case 0x1E:
+                {
+                    const uint8_t originalIndexValue = chip8.index;
+                    chip8.index += chip8.registers[byte1Half2];
+                    // Check for overflow, set VF
+                    if (chip8.index < originalIndexValue)
+                    {
+                        chip8.registers[0xF] = 1;
+                    }
+                    break;
+                }
+                // GET KEY (block for input)
+                case 0x0A:
+                    // Set the PC to this same instruction, this will cause it to loop over and over again
+                    chip8.programCounter -= 2;
+
+                    // Resume execution if any key is pressed
+                    if (keypad.any())
+                    {
+                        chip8.registers[byte1Half2] = keypad._Find_first();
+                    }
+                    break;
+                // FONT CHARACTER
+                case 0x29:
+                {
+                    const uint8_t hexChar = chip8.registers[byte1Half2];
+                    // Each character from 0 to F is stored in order starting at FONT_ADDRESS_START,
+                    // and each is 5 bytes long
+                    chip8.index = FONT_ADDRESS_START + (hexChar * 5);
+                    break;
+                }
+                // BINARY-CODED DECIMAL CONVERSION
+                case 0x33:
+                {
+                    // TODO:
+                    break;
+                }
+                // STORE AND LOAD MEM
+                case 0x55:
+                {
+                    const uint16_t tempIndex = chip8.index;
+                    for (uint8_t i = 0; i < byte1Half2; i++)
+                    {
+                        chip8.memory[tempIndex + i] = chip8.registers[i];
+                    }
+                    if (params.storeIncrementIndex)
+                    {
+                        chip8.index = tempIndex;
+                    }
+                    break;
+                }
+                case 0x65:
+                {
+                    const uint16_t tempIndex = chip8.index;
+                    for (uint8_t i = 0; i < byte1Half2; i++)
+                    {
+                        chip8.registers[i] = chip8.memory[tempIndex + i];
+                    }
+                    if (params.loadIncrementIndex)
+                    {
+                        chip8.index = tempIndex;
+                    }
+                    break;
+                }
+                default: UnknownInstruction(byte1, byte2);
+            }
+            break;
+
         default:
             UnknownInstruction(byte1, byte2);
     }
@@ -334,20 +442,103 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
 {
     sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
 
+    const auto onClose = [&window](const sf::Event::Closed &)
+    {
+        window.close();
+    };
+
+    // Use a bool array to keep track of keys being pressed
+    std::bitset<16> keypad{};
+    const auto onKeyPress = [&window, &keypad](const sf::Event::KeyPressed &event)
+    {
+        keypad.reset();
+        if (event.scancode == sf::Keyboard::Scan::Num1)
+        {
+            keypad.set(0);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num2)
+        {
+            keypad.set(1);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num3)
+        {
+            keypad.set(2);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num4)
+        {
+            keypad.set(3);
+        }
+
+        if (event.scancode == sf::Keyboard::Scan::Q)
+        {
+            keypad.set(4);
+        }
+        if (event.scancode == sf::Keyboard::Scan::W)
+        {
+            keypad.set(5);
+        }
+        if (event.scancode == sf::Keyboard::Scan::E)
+        {
+            keypad.set(6);
+        }
+        if (event.scancode == sf::Keyboard::Scan::R)
+        {
+            keypad.set(7);
+        }
+
+        if (event.scancode == sf::Keyboard::Scan::A)
+        {
+            keypad.set(8);
+        }
+        if (event.scancode == sf::Keyboard::Scan::S)
+        {
+            keypad.set(9);
+        }
+        if (event.scancode == sf::Keyboard::Scan::D)
+        {
+            keypad.set(10);
+        }
+        if (event.scancode == sf::Keyboard::Scan::F)
+        {
+            keypad.set(11);
+        }
+
+
+        if (event.scancode == sf::Keyboard::Scan::Z)
+        {
+            keypad.set(12);
+        }
+        if (event.scancode == sf::Keyboard::Scan::X)
+        {
+            keypad.set(13);
+        }
+        if (event.scancode == sf::Keyboard::Scan::C)
+        {
+            keypad.set(14);
+        }
+        if (event.scancode == sf::Keyboard::Scan::V)
+        {
+            keypad.set(15);
+        }
+    };
+
     // By default, chrono::duration is in seconds
     // <double> -> representation
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
     std::chrono::duration<double> deltaTime{};
     auto deltaStart = std::chrono::steady_clock::now();
+
     while (window.isOpen())
     {
+        window.handleEvents(onClose, onKeyPress);
+
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         deltaTime = std::chrono::duration<double>(start - deltaStart);
         deltaStart = std::chrono::steady_clock::now();
         // Timer is decremented at 60Hz
         const auto hz = 60 * deltaTime.count();
 
-        FetchDecodeExecute(chip8, params, hz);
+        FetchDecodeExecute(chip8, keypad, params, hz);
         Draw(chip8.display, window);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

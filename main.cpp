@@ -25,9 +25,6 @@ int main(int argc, char *argv[])
     Chip8 chip8;
     LoadFontsIntoMemory(chip8);
     LoadRomIntoMemory(chip8, rom_file);
-    Params params = {
-        true,
-        false
-    };
+    const Params params = {};
     InitializeLoopWithRendering(ups, chip8, params);
 }
