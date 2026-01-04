@@ -31,17 +31,22 @@ uint16_t characters[16 * 5] = {
 // 1111 0000
 // 1 0000000
 // 1 0000000
-void LoadFontsIntoMemory(Chip8 &chip8) {
-    for (uint8_t i = 0; i < 16; i++) {
-        for (uint8_t j = 0; j < 5; j++) {
+void LoadFontsIntoMemory(Chip8 &chip8)
+{
+    for (uint8_t i = 0; i < 16; i++)
+    {
+        for (uint8_t j = 0; j < 5; j++)
+        {
             chip8.memory[FONT_ADDRESS_START + (i * 5 + j)] = characters[i * 5 + j];
         }
     }
 }
 
-size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file) {
+size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file)
+{
     std::ifstream rom(rom_file, std::ios::binary);
-    if (!rom.is_open()) {
+    if (!rom.is_open())
+    {
         std::cout << "Failed to read file" << std::endl;
         exit(1);
     }
@@ -57,14 +62,16 @@ size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file) {
     return size;
 }
 
-void UnknownInstruction(const uint8_t byte1, const uint8_t byte2) {
+void UnknownInstruction(const uint8_t byte1, const uint8_t byte2)
+{
     const uint16_t fullInstruction = ((byte1) << 8) | byte2;
     std::cerr << "Unknown Instruction: " << std::hex << std::uppercase << std::setw(4) << std::setfill('0') <<
             fullInstruction << "\n";
     exit(1);
 }
 
-void FetchDecodeExecute(Chip8 &chip8, const double hz) {
+void FetchDecodeExecute(Chip8 &chip8, const double hz)
+{
     // Fetch
     const uint8_t byte1 = chip8.memory[chip8.programCounter];
     const uint8_t byte2 = chip8.memory[chip8.programCounter + 1];
@@ -82,9 +89,11 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
 
     // Execute
     // TODO: Decrement timers by hz
-    switch (byte1Half1) {
+    switch (byte1Half1)
+    {
         case 0:
-            switch (byte2Half2) {
+            switch (byte2Half2)
+            {
                 case 0:
                     // Clear screen
                     chip8.display.reset();
@@ -98,7 +107,8 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
                     UnknownInstruction(byte1, byte2);
             }
             break;
-        case 1: {
+        case 1:
+        {
             const uint16_t jumpTo = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             chip8.programCounter = jumpTo;
             break;
@@ -112,32 +122,41 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
         case 0xA:
             chip8.index = (byte1Half2 << 8) | (byte2Half1 << 4) | (byte2Half2);
             break;
-        case 0xD: {
+        case 0xD:
+        {
             // Readability
             uint8_t x = chip8.registers[byte1Half2] & 63;
             uint8_t y = chip8.registers[byte2Half1] & 31;
             chip8.registers[0xF] = 0;
             const uint8_t n = byte2Half2;
 
-            for (uint8_t i = 0; i < n; i++) {
+            for (uint8_t i = 0; i < n; i++)
+            {
                 const uint8_t nthByteSpriteData = chip8.memory[chip8.index + i];
-                for (uint8_t j = 0; j < 8; j++) {
+                for (uint8_t j = 0; j < 8; j++)
+                {
                     const uint8_t currentPixel = (nthByteSpriteData & (0b1 << (7 - j))) >> (7 - j);
-                    if (currentPixel == 1) {
-                        if (chip8.display.test(y * 64 + x)) {
+                    if (currentPixel == 1)
+                    {
+                        if (chip8.display.test(y * 64 + x))
+                        {
                             chip8.display.reset(y * 64 + x);
                             chip8.registers[0xF] = 1;
-                        } else {
+                        }
+                        else
+                        {
                             chip8.display.set(y * 64 + x);
                         }
                         x++;
-                        if (x >= 64) {
+                        if (x >= 64)
+                        {
                             break;
                         }
                     }
                 }
                 y++;
-                if (y >= 32) {
+                if (y >= 32)
+                {
                     break;
                 }
                 x = chip8.registers[byte1Half2] & 63;
@@ -150,13 +169,17 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
 }
 
 
-void Draw(const std::bitset<2048> &display, sf::RenderWindow &window) {
+void Draw(const std::bitset<2048> &display, sf::RenderWindow &window)
+{
     // Loop through the display pixel 2D array and draw it to the SFML window (and scale it up)
     window.clear(sf::Color::Black);
     // 64 x 32 -> Rows: i = 0 to 32 (height), Columns: j = 0 to 64 (width)
-    for (uint8_t i = 0; i < 32; i++) {
-        for (uint8_t j = 0; j < 64; j++) {
-            if (display[i * 64 + j]) {
+    for (uint8_t i = 0; i < 32; i++)
+    {
+        for (uint8_t j = 0; j < 64; j++)
+        {
+            if (display[i * 64 + j])
+            {
                 // Draw to hidden buffer
                 // Use a square of size SCALE to represent a pixel on the scaled up display
                 sf::RectangleShape rectangle;
@@ -172,7 +195,8 @@ void Draw(const std::bitset<2048> &display, sf::RenderWindow &window) {
 }
 
 
-void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
+void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8)
+{
     sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
 
     // By default, chrono::duration is in seconds
@@ -180,7 +204,8 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
     std::chrono::duration<double> deltaTime{};
     auto deltaStart = std::chrono::steady_clock::now();
-    while (window.isOpen()) {
+    while (window.isOpen())
+    {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         deltaTime = std::chrono::duration<double>(start - deltaStart);
         deltaStart = std::chrono::steady_clock::now();
@@ -193,7 +218,8 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
         std::chrono::duration<double> elapsed_seconds = end - start;
-        while (elapsed_seconds < timeBetweenUpdates) {
+        while (elapsed_seconds < timeBetweenUpdates)
+        {
             elapsed_seconds = std::chrono::steady_clock::now() - start;
         }
     }
