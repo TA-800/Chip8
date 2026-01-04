@@ -379,28 +379,22 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                 // STORE AND LOAD MEM
                 case 0x55:
                 {
-                    const uint16_t tempIndex = chip8.index;
-                    for (uint8_t i = 0; i < byte1Half2; i++)
+                    uint8_t i;
+                    for (i = 0; i < byte1Half2; i++)
                     {
-                        chip8.memory[tempIndex + i] = chip8.registers[i];
+                        chip8.memory[chip8.index + i] = chip8.registers[i];
                     }
-                    if (params.storeIncrementIndex)
-                    {
-                        chip8.index = tempIndex;
-                    }
+                    chip8.index += params.storeIncrementIndex ? i : 0;
                     break;
                 }
                 case 0x65:
                 {
-                    const uint16_t tempIndex = chip8.index;
-                    for (uint8_t i = 0; i < byte1Half2; i++)
+                    uint8_t i;
+                    for (i = 0; i < byte1Half2; i++)
                     {
-                        chip8.registers[i] = chip8.memory[tempIndex + i];
+                        chip8.registers[i] = chip8.memory[chip8.index + i];
                     }
-                    if (params.loadIncrementIndex)
-                    {
-                        chip8.index = tempIndex;
-                    }
+                    chip8.index += params.loadIncrementIndex ? i : 0;
                     break;
                 }
                 default: UnknownInstruction(byte1, byte2);
