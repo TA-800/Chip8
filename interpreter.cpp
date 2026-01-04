@@ -57,6 +57,13 @@ size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file) {
     return size;
 }
 
+void UnknownInstruction(const uint8_t byte1, const uint8_t byte2) {
+    const uint16_t fullInstruction = ((byte1) << 8) | byte2;
+    std::cerr << "Unknown Instruction: " << std::hex << std::uppercase << std::setw(4) << std::setfill('0') <<
+            fullInstruction << "\n";
+    exit(1);
+}
+
 void FetchDecodeExecute(Chip8 &chip8, const double hz) {
     // Fetch
     const uint8_t byte1 = chip8.memory[chip8.programCounter];
@@ -87,6 +94,8 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
                     chip8.programCounter = chip8.sp;
                     chip8.sp -= 1;
                     break;
+                default:
+                    UnknownInstruction(byte1, byte2);
             }
             break;
         case 1: {
@@ -131,13 +140,15 @@ void FetchDecodeExecute(Chip8 &chip8, const double hz) {
                 if (y >= 32) {
                     break;
                 }
+                x = chip8.registers[byte1Half2] & 63;
             }
             break;
         }
         default:
-            break;
+            UnknownInstruction(byte1, byte2);
     }
 }
+
 
 void Draw(const std::bitset<2048> &display, sf::RenderWindow &window) {
     // Loop through the display pixel 2D array and draw it to the SFML window (and scale it up)
@@ -167,7 +178,7 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
     // By default, chrono::duration is in seconds
     // <double> -> representation
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
-    auto deltaTime = std::chrono::duration<double>(0.0);
+    std::chrono::duration<double> deltaTime{};
     auto deltaStart = std::chrono::steady_clock::now();
     while (window.isOpen()) {
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -176,7 +187,6 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8) {
         // Timer is decremented at 60Hz
         const auto hz = 60 * deltaTime.count();
 
-        // Fetch();
         FetchDecodeExecute(chip8, hz);
         Draw(chip8.display, window);
 
