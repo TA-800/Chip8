@@ -520,14 +520,21 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
     // By default, chrono::duration is in seconds
     // <double> -> representation
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration<double>(0);
     std::chrono::duration<double> deltaTime{};
     auto deltaStart = std::chrono::steady_clock::now();
-
     while (window.isOpen())
     {
         window.handleEvents(onClose, onKeyPress);
-
-        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        // Control speed of instruction execution
+        if (elapsed < timeBetweenUpdates)
+        {
+            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+            elapsed = end - start;
+            continue;
+        }
+        start = std::chrono::steady_clock::now();
         deltaTime = std::chrono::duration<double>(start - deltaStart);
         deltaStart = std::chrono::steady_clock::now();
         // Timer is decremented at 60Hz
@@ -537,11 +544,6 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         Draw(chip8.display, window);
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-
-        std::chrono::duration<double> elapsed_seconds = end - start;
-        while (elapsed_seconds < timeBetweenUpdates)
-        {
-            elapsed_seconds = std::chrono::steady_clock::now() - start;
-        }
+        elapsed = end - start;
     }
 }
