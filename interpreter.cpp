@@ -89,8 +89,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
     const uint8_t byte2Half2 = byte2 & (0b00001111);
 
     // Execute
-    chip8.delayTimer -= hz;
-    chip8.soundTimer -= hz;
+    if (chip8.delayTimer > 0) { --chip8.delayTimer; }
+    if (chip8.soundTimer > 0) { --chip8.soundTimer; }
     switch (byte1Half1)
     {
         case 0:
@@ -459,19 +459,19 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         keypad.reset();
         if (event.scancode == sf::Keyboard::Scan::Num1)
         {
-            keypad.set(0);
+            keypad.set(1);
         }
         if (event.scancode == sf::Keyboard::Scan::Num2)
         {
-            keypad.set(1);
+            keypad.set(2);
         }
         if (event.scancode == sf::Keyboard::Scan::Num3)
         {
-            keypad.set(2);
+            keypad.set(3);
         }
         if (event.scancode == sf::Keyboard::Scan::Num4)
         {
-            keypad.set(3);
+            keypad.set(0xC);
         }
 
         if (event.scancode == sf::Keyboard::Scan::Q)
@@ -488,43 +488,44 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         }
         if (event.scancode == sf::Keyboard::Scan::R)
         {
-            keypad.set(7);
+            keypad.set(0xD);
         }
 
         if (event.scancode == sf::Keyboard::Scan::A)
         {
-            keypad.set(8);
+            keypad.set(7);
         }
         if (event.scancode == sf::Keyboard::Scan::S)
         {
-            keypad.set(9);
+            keypad.set(8);
         }
         if (event.scancode == sf::Keyboard::Scan::D)
         {
-            keypad.set(10);
+            keypad.set(9);
         }
         if (event.scancode == sf::Keyboard::Scan::F)
         {
-            keypad.set(11);
+            keypad.set(0xE);
         }
 
 
         if (event.scancode == sf::Keyboard::Scan::Z)
         {
-            keypad.set(12);
+            keypad.set(0xA);
         }
         if (event.scancode == sf::Keyboard::Scan::X)
         {
-            keypad.set(13);
+            keypad.set(0);
         }
         if (event.scancode == sf::Keyboard::Scan::C)
         {
-            keypad.set(14);
+            keypad.set(0xB);
         }
         if (event.scancode == sf::Keyboard::Scan::V)
         {
-            keypad.set(15);
+            keypad.set(0xF);
         }
+        // std::cout << keypad << "\n";
     };
 
     // By default, chrono::duration is in seconds
