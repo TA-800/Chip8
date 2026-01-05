@@ -215,7 +215,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
 
                     const uint8_t value = chip8.registers[byte1Half2];
                     chip8.registers[byte1Half2] = value << 1;
-                    chip8.registers[0xF] = value & 0b10000000;
+                    chip8.registers[0xF] = (value & 0b10000000) >> 7;
                     break;
                 }
                 // VY - VX
