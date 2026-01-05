@@ -600,30 +600,25 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
     // By default, chrono::duration is in seconds
     // <double> -> representation
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
-    auto start = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration<double>(0);
-    std::chrono::duration<double> deltaTime{};
-    auto deltaStart = std::chrono::steady_clock::now();
+    auto last = std::chrono::steady_clock::now();
+    auto deltaTime = std::chrono::duration<double>(0);
     while (window.isOpen())
     {
         window.handleEvents(onClose, onKeyPress, onKeyRelease);
         // Control speed of instruction execution
-        if (elapsed < timeBetweenUpdates)
+        if (deltaTime < timeBetweenUpdates)
         {
-            std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-            elapsed = end - start;
+            auto now = std::chrono::steady_clock::now();
+            deltaTime += now - last;
+            last = now;
             continue;
         }
-        start = std::chrono::steady_clock::now();
-        deltaTime = std::chrono::duration<double>(start - deltaStart);
-        deltaStart = std::chrono::steady_clock::now();
         // Timer is decremented at 60Hz
         const auto hz = 60 * deltaTime.count();
 
         FetchDecodeExecute(chip8, keypad, params, hz);
         Draw(chip8.display, window);
 
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        elapsed = end - start;
+        deltaTime = std::chrono::duration<double>(0);
     }
 }
