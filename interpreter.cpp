@@ -102,7 +102,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     break;
                 // RETURN FROM SUBROUTINE
                 case 0xE:
-                    chip8.sp -= 1;
+                    chip8.sp--;
                     chip8.programCounter = chip8.stack[chip8.sp];
                     break;
                 default:
@@ -145,7 +145,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
         }
         case 5:
         {
-            if (chip8.registers[byte1Half1] == chip8.registers[byte2Half1])
+            if (chip8.registers[byte1Half2] == chip8.registers[byte2Half1])
             {
                 chip8.programCounter += 2;
             }
@@ -176,10 +176,11 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     break;
                 case 4:
                 {
-                    const uint8_t initialVx = chip8.registers[byte1Half2];
-                    chip8.registers[byte1Half2] += chip8.registers[byte2Half1];
                     // Check for overflow reference: https://stackoverflow.com/questions/33948450/detecting-if-an-unsigned-integer-overflow-has-occurred-when-adding-two-numbers
-                    chip8.registers[0xF] = chip8.registers[byte1Half2] < initialVx ? 1 : 0;
+                    const uint8_t vx = chip8.registers[byte1Half2];
+                    const uint8_t vy = chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = vx + vy < vx ? 1 : 0;
+                    chip8.registers[byte1Half2] = vx + vy;
                     break;
                 }
                 // VX - VY
@@ -187,8 +188,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                 {
                     const uint8_t vx = chip8.registers[byte1Half2];
                     const uint8_t vy = chip8.registers[byte2Half1];
-                    chip8.registers[byte1Half2] = vx - vy;
                     chip8.registers[0xF] = vx > vy ? 1 : 0;
+                    chip8.registers[byte1Half2] = vx - vy;
                     break;
                 }
                 // RIGHT SHIFT 1 bit
@@ -222,12 +223,13 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                 {
                     const uint8_t vx = chip8.registers[byte1Half2];
                     const uint8_t vy = chip8.registers[byte2Half1];
-                    chip8.registers[byte1Half2] = vy - vx;
                     chip8.registers[0xF] = vy > vx ? 1 : 0;
+                    chip8.registers[byte1Half2] = vy - vx;
                     break;
                 }
                 default: UnknownInstruction(byte1, byte2);
             }
+            break;
         }
         case 9:
         {
@@ -257,6 +259,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
             uint8_t randomNumber = distribution(randomEngine);
             randomNumber &= nn;
             chip8.registers[byte1Half2] = randomNumber;
+            break;
         }
         // DRAW
         case 0xD:
