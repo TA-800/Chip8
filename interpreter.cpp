@@ -1,11 +1,10 @@
 #include "interpreter.h"
+#include <SFML/Graphics.hpp>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <thread>
-#include <SFML/Graphics.hpp>
-
 
 uint16_t characters[16 * 5] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -66,8 +65,8 @@ size_t LoadRomIntoMemory(Chip8 &chip8, const std::string &rom_file)
 void UnknownInstruction(const uint8_t byte1, const uint8_t byte2)
 {
     const uint16_t fullInstruction = ((byte1) << 8) | byte2;
-    std::cerr << "Unknown Instruction: " << std::hex << std::uppercase << std::setw(4) << std::setfill('0') <<
-            fullInstruction << "\n";
+    std::cerr << "Unknown Instruction: " << std::hex << std::uppercase << std::setw(4) << std::setfill('0')
+            << fullInstruction << "\n";
     exit(1);
 }
 
@@ -89,8 +88,14 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
     const uint8_t byte2Half2 = byte2 & (0b00001111);
 
     // Execute
-    if (chip8.delayTimer > 0) { chip8.delayTimer -= hz; }
-    if (chip8.soundTimer > 0) { chip8.soundTimer -= hz; }
+    if (chip8.delayTimer > 0)
+    {
+        chip8.delayTimer = chip8.delayTimer >= hz ? chip8.delayTimer - hz : 0;
+    }
+    if (chip8.soundTimer > 0)
+    {
+        chip8.soundTimer = chip8.soundTimer >= hz ? chip8.soundTimer - hz : 0;
+    }
     switch (byte1Half1)
     {
         case 0:
@@ -228,7 +233,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     chip8.registers[0xF] = vy >= vx ? 1 : 0;
                     break;
                 }
-                default: UnknownInstruction(byte1, byte2);
+                default:
+                    UnknownInstruction(byte1, byte2);
             }
             break;
         }
@@ -363,6 +369,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     if (keypad.any())
                     {
                         chip8.registers[byte1Half2] = keypad._Find_first();
+                        chip8.programCounter += 2;
                     }
                     break;
                 // FONT CHARACTER
@@ -407,7 +414,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     chip8.index += params.loadIncrementIndex ? i : 0;
                     break;
                 }
-                default: UnknownInstruction(byte1, byte2);
+                default:
+                    UnknownInstruction(byte1, byte2);
             }
             break;
 
@@ -415,7 +423,6 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
             UnknownInstruction(byte1, byte2);
     }
 }
-
 
 void Draw(const std::bitset<2048> &display, sf::RenderWindow &window)
 {
@@ -442,16 +449,11 @@ void Draw(const std::bitset<2048> &display, sf::RenderWindow &window)
     window.display();
 }
 
-
 void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &params)
 {
     sf::RenderWindow window(sf::VideoMode({64 * SCALE, 32 * SCALE}), "Chip 8", sf::Style::Titlebar | sf::Style::Close);
 
-    const auto onClose = [&window](const sf::Event::Closed &)
-    {
-        window.close();
-    };
-
+    const auto onClose = [&window](const sf::Event::Closed &) { window.close(); };
     // Use a bool array to keep track of keys being pressed
     std::bitset<16> keypad{};
     const auto onKeyPress = [&keypad](const sf::Event::KeyPressed &event)
@@ -506,7 +508,6 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         {
             keypad.set(0xE);
         }
-
 
         if (event.scancode == sf::Keyboard::Scan::Z)
         {
@@ -578,7 +579,6 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
             keypad.reset(0xE);
         }
 
-
         if (event.scancode == sf::Keyboard::Scan::Z)
         {
             keypad.reset(0xA);
@@ -596,29 +596,24 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
             keypad.reset(0xF);
         }
     };
-
-    // By default, chrono::duration is in seconds
-    // <double> -> representation
-    const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
-    auto last = std::chrono::steady_clock::now();
-    auto deltaTime = std::chrono::duration<double>(0);
+    const auto intervalBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
+    auto lastCompletionTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> deltaTime{0.0};
     while (window.isOpen())
     {
         window.handleEvents(onClose, onKeyPress, onKeyRelease);
-        // Control speed of instruction execution
-        if (deltaTime < timeBetweenUpdates)
+
+        auto latestCompletionTime = std::chrono::steady_clock::now();
+        deltaTime += latestCompletionTime - lastCompletionTime;
+        lastCompletionTime = latestCompletionTime;
+        if (deltaTime < intervalBetweenUpdates)
         {
-            auto now = std::chrono::steady_clock::now();
-            deltaTime += now - last;
-            last = now;
             continue;
         }
-        // Timer is decremented at 60Hz
-        const auto hz = 60 * deltaTime.count();
 
+        const auto hz = 60.0 * deltaTime.count();
         FetchDecodeExecute(chip8, keypad, params, hz);
         Draw(chip8.display, window);
-
-        deltaTime = std::chrono::duration<double>(0);
+        deltaTime = std::chrono::duration<double>{0.0};
     }
 }
