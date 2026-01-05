@@ -31,10 +31,10 @@ typedef struct hardware
 // Configuration parameters for execution if any
 typedef struct params
 {
-    bool shift = true;
+    bool shift = false;
     bool jumpWithOffset = false;
-    bool storeIncrementIndex = true;
-    bool loadIncrementIndex = true;
+    bool storeIncrementIndex = false;
+    bool loadIncrementIndex = false;
 } Params;
 
 void LoadFontsIntoMemory(Chip8 &chip8);
