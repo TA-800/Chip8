@@ -254,11 +254,10 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
         // RANDOM
         case 0xC:
         {
-            const uint8_t nn = byte2;
             std::mt19937 randomEngine(std::random_device{}());
             std::uniform_int_distribution<uint8_t> distribution(0, 255);
             uint8_t randomNumber = distribution(randomEngine);
-            randomNumber &= nn;
+            randomNumber &= byte2;
             chip8.registers[byte1Half2] = randomNumber;
             break;
         }
