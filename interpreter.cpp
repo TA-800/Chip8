@@ -189,7 +189,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     const uint8_t vx = chip8.registers[byte1Half2];
                     const uint8_t vy = chip8.registers[byte2Half1];
                     chip8.registers[byte1Half2] = vx - vy;
-                    chip8.registers[0xF] = vx > vy ? 1 : 0;
+                    chip8.registers[0xF] = vx >= vy ? 1 : 0;
                     break;
                 }
                 // RIGHT SHIFT 1 bit
@@ -224,7 +224,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     const uint8_t vx = chip8.registers[byte1Half2];
                     const uint8_t vy = chip8.registers[byte2Half1];
                     chip8.registers[byte1Half2] = vy - vx;
-                    chip8.registers[0xF] = vy > vx ? 1 : 0;
+                    chip8.registers[0xF] = vy >= vx ? 1 : 0;
                     break;
                 }
                 default: UnknownInstruction(byte1, byte2);
