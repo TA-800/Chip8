@@ -456,7 +456,6 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
     std::bitset<16> keypad{};
     const auto onKeyPress = [&keypad](const sf::Event::KeyPressed &event)
     {
-        keypad.reset();
         if (event.scancode == sf::Keyboard::Scan::Num1)
         {
             keypad.set(1);
@@ -525,19 +524,89 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         {
             keypad.set(0xF);
         }
-        // std::cout << keypad << "\n";
+    };
+    const auto onKeyRelease = [&keypad](const sf::Event::KeyReleased &event)
+    {
+        if (event.scancode == sf::Keyboard::Scan::Num1)
+        {
+            keypad.reset(1);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num2)
+        {
+            keypad.reset(2);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num3)
+        {
+            keypad.reset(3);
+        }
+        if (event.scancode == sf::Keyboard::Scan::Num4)
+        {
+            keypad.reset(0xC);
+        }
+
+        if (event.scancode == sf::Keyboard::Scan::Q)
+        {
+            keypad.reset(4);
+        }
+        if (event.scancode == sf::Keyboard::Scan::W)
+        {
+            keypad.reset(5);
+        }
+        if (event.scancode == sf::Keyboard::Scan::E)
+        {
+            keypad.reset(6);
+        }
+        if (event.scancode == sf::Keyboard::Scan::R)
+        {
+            keypad.reset(0xD);
+        }
+
+        if (event.scancode == sf::Keyboard::Scan::A)
+        {
+            keypad.reset(7);
+        }
+        if (event.scancode == sf::Keyboard::Scan::S)
+        {
+            keypad.reset(8);
+        }
+        if (event.scancode == sf::Keyboard::Scan::D)
+        {
+            keypad.reset(9);
+        }
+        if (event.scancode == sf::Keyboard::Scan::F)
+        {
+            keypad.reset(0xE);
+        }
+
+
+        if (event.scancode == sf::Keyboard::Scan::Z)
+        {
+            keypad.reset(0xA);
+        }
+        if (event.scancode == sf::Keyboard::Scan::X)
+        {
+            keypad.reset(0);
+        }
+        if (event.scancode == sf::Keyboard::Scan::C)
+        {
+            keypad.reset(0xB);
+        }
+        if (event.scancode == sf::Keyboard::Scan::V)
+        {
+            keypad.reset(0xF);
+        }
     };
 
     // By default, chrono::duration is in seconds
     // <double> -> representation
     const auto timeBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration<double>(0);
     std::chrono::duration<double> deltaTime{};
     auto deltaStart = std::chrono::steady_clock::now();
     while (window.isOpen())
     {
-        window.handleEvents(onClose, onKeyPress);
+        window.handleEvents(onClose, onKeyPress, onKeyRelease);
         // Control speed of instruction execution
         if (elapsed < timeBetweenUpdates)
         {
