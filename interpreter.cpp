@@ -70,7 +70,19 @@ void UnknownInstruction(const uint8_t byte1, const uint8_t byte2)
     exit(1);
 }
 
-void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Params &params, const double hz)
+inline void DecrementTimers(Chip8 &chip8)
+{
+    if (chip8.delayTimer > 0)
+    {
+        chip8.delayTimer--;
+    }
+    if (chip8.soundTimer > 0)
+    {
+        chip8.soundTimer--;
+    }
+}
+
+void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Params &params)
 {
     // Fetch
     const uint8_t byte1 = chip8.memory[chip8.programCounter];
@@ -87,15 +99,6 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
     const uint8_t byte2Half1 = (byte2 & (0b11110000)) >> 4;
     const uint8_t byte2Half2 = byte2 & (0b00001111);
 
-    // Execute
-    if (chip8.delayTimer > 0)
-    {
-        chip8.delayTimer = chip8.delayTimer >= hz ? chip8.delayTimer - hz : 0;
-    }
-    if (chip8.soundTimer > 0)
-    {
-        chip8.soundTimer = chip8.soundTimer >= hz ? chip8.soundTimer - hz : 0;
-    }
     switch (byte1Half1)
     {
         case 0:
@@ -614,22 +617,28 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
     auto lastFrameTime = std::chrono::steady_clock::now();
     std::chrono::duration<double> cpuTime{0.0};
     std::chrono::duration<double> drawTime{0.0};
+    std::chrono::duration<double> timerTime{0.0};
 
     while (window.isOpen())
     {
         window.handleEvents(onClose, onKeyPress, onKeyRelease);
 
-        auto latestFrameTime = std::chrono::steady_clock::now();
+        const auto latestFrameTime = std::chrono::steady_clock::now();
         const auto deltaTime = latestFrameTime - lastFrameTime;
         lastFrameTime = latestFrameTime;
 
         cpuTime += deltaTime;
         drawTime += deltaTime;
+        timerTime += deltaTime;
 
+        while (timerTime >= intervalForHz)
+        {
+            DecrementTimers(chip8);
+            timerTime -= intervalForHz;
+        }
         while (cpuTime >= intervalBetweenUpdates)
         {
-            const auto timerHz = intervalBetweenUpdates.count() * sixtyHz;
-            FetchDecodeExecute(chip8, keypad, params, timerHz);
+            FetchDecodeExecute(chip8, keypad, params);
             cpuTime -= intervalBetweenUpdates;
         }
         while (drawTime >= intervalForHz)

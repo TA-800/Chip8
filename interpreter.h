@@ -17,16 +17,16 @@ typedef struct hardware
     uint16_t stack[16]{};
     // Registers V0 - VF
     uint8_t registers[16]{};
-    // Delay timer decremented at 60Hz until it reaches 0
-    double delayTimer{};
-    // Sound timer that gives off beeping sound as long as it's not 0
-    double soundTimer{};
     // Point to current instruction in memory
     uint16_t programCounter{};
     // Index register
     uint16_t index{};
     // Stack pointer
     uint8_t sp{};
+    // Delay timer decremented at 60Hz until it reaches 0
+    uint8_t delayTimer{};
+    // Sound timer that gives off beeping sound as long as it's not 0
+    uint8_t soundTimer{};
     // Boolean that tracks keypress state for the FX0A Get-Key instruction
     bool beginKeyPress = false;
 } Chip8;
