@@ -45,6 +45,11 @@ int main(int argc, char *argv[])
         {
             params.storeIncrementIndex = true;
         }
+
+        if (argvString.find("-resetFlagOnBitOperations") != std::string::npos)
+        {
+            params.resetFlagOnBitOperations = true;
+        }
     }
 
     const std::string rom_file = argv[1];

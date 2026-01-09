@@ -172,12 +172,15 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     break;
                 case 1:
                     chip8.registers[byte1Half2] |= chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = params.resetFlagOnBitOperations ? 0 : chip8.registers[0xF];
                     break;
                 case 2:
                     chip8.registers[byte1Half2] &= chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = params.resetFlagOnBitOperations ? 0 : chip8.registers[0xF];
                     break;
                 case 3:
                     chip8.registers[byte1Half2] ^= chip8.registers[byte2Half1];
+                    chip8.registers[0xF] = params.resetFlagOnBitOperations ? 0 : chip8.registers[0xF];
                     break;
                 case 4:
                 {

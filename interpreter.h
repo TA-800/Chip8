@@ -38,6 +38,7 @@ typedef struct params
     bool jumpWithOffset = false;
     bool storeIncrementIndex = false;
     bool loadIncrementIndex = false;
+    bool resetFlagOnBitOperations = false;
 } Params;
 
 void LoadFontsIntoMemory(Chip8 &chip8);
