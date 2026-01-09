@@ -365,12 +365,20 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     // Set the PC to this same instruction, this will cause it to loop over and over again
                     chip8.programCounter -= 2;
 
-                    // Resume execution if any key is pressed
-                    if (keypad.any())
+                    // Save pressed key
+                    if (!chip8.beginKeyPress && keypad.any())
                     {
                         chip8.registers[byte1Half2] = keypad._Find_first();
+                        chip8.beginKeyPress = true;
+                    }
+
+                    // Resume execution on key release
+                    if (chip8.beginKeyPress && !keypad.test(chip8.registers[byte1Half2]))
+                    {
+                        chip8.beginKeyPress = false;
                         chip8.programCounter += 2;
                     }
+
                     break;
                 // FONT CHARACTER
                 case 0x29:
@@ -614,6 +622,7 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
         const auto hz = 60.0 * deltaTime.count();
         FetchDecodeExecute(chip8, keypad, params, hz);
         Draw(chip8.display, window);
-        deltaTime = std::chrono::duration<double>{0.0};
+        // Prevent time drift
+        deltaTime -= intervalBetweenUpdates;
     }
 }

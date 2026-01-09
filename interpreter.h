@@ -13,19 +13,22 @@ typedef struct hardware
     uint8_t memory[4096]{};
     // 64 x 32 pixels black or white
     std::bitset<2048> display;
-    // Point to current instruction in memory
-    uint16_t programCounter{};
-    // Registers V0 - VF
-    uint8_t registers[16]{};
     // Stack for 16-bit addresses
     uint16_t stack[16]{};
-    uint8_t sp{};
-    // Index register
-    uint16_t index{};
+    // Registers V0 - VF
+    uint8_t registers[16]{};
     // Delay timer decremented at 60Hz until it reaches 0
     double delayTimer{};
     // Sound timer that gives off beeping sound as long as it's not 0
     double soundTimer{};
+    // Point to current instruction in memory
+    uint16_t programCounter{};
+    // Index register
+    uint16_t index{};
+    // Stack pointer
+    uint8_t sp{};
+    // Boolean that tracks keypress state for the FX0A Get-Key instruction
+    bool beginKeyPress = false;
 } Chip8;
 
 // Configuration parameters for execution if any
