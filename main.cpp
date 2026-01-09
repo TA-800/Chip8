@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     }
 
     const std::string rom_file = argv[1];
-    const uint8_t ups = atoi(argv[2]); // 12-16 updates (fetch-decode-execute) per second
+    const uint8_t ups = atoi(argv[2]);
 
     Chip8 chip8;
     LoadFontsIntoMemory(chip8);

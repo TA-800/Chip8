@@ -184,7 +184,8 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
                     break;
                 case 4:
                 {
-                    // Check for overflow reference: https://stackoverflow.com/questions/33948450/detecting-if-an-unsigned-integer-overflow-has-occurred-when-adding-two-numbers
+                    // Check for overflow reference:
+                    // https://stackoverflow.com/questions/33948450/detecting-if-an-unsigned-integer-overflow-has-occurred-when-adding-two-numbers
                     const uint8_t vx = chip8.registers[byte1Half2];
                     const uint8_t vy = chip8.registers[byte2Half1];
                     const uint8_t sum = vx + vy;
@@ -256,7 +257,7 @@ void FetchDecodeExecute(Chip8 &chip8, const std::bitset<16> &keypad, const Param
         case 0xB:
         {
             const uint16_t jumpTo = byte1Half2 << 8 | byte2;
-            const uint8_t offset = params.jumpWithOffset ? chip8.registers[byte1Half2] : 0;
+            const uint8_t offset = params.jumpWithOffset ? chip8.registers[byte1Half2] : chip8.registers[0];
             chip8.programCounter = jumpTo + offset;
             break;
         }
@@ -607,25 +608,34 @@ void InitializeLoopWithRendering(const uint8_t ups, Chip8 &chip8, const Params &
             keypad.reset(0xF);
         }
     };
+    constexpr double sixtyHz = 60.0;
+    constexpr auto intervalForHz = std::chrono::duration<double>(1 / sixtyHz);
     const auto intervalBetweenUpdates = std::chrono::duration<double>(1.0 / ups);
-    auto lastCompletionTime = std::chrono::steady_clock::now();
-    std::chrono::duration<double> deltaTime{0.0};
+    auto lastFrameTime = std::chrono::steady_clock::now();
+    std::chrono::duration<double> cpuTime{0.0};
+    std::chrono::duration<double> drawTime{0.0};
+
     while (window.isOpen())
     {
         window.handleEvents(onClose, onKeyPress, onKeyRelease);
 
-        auto latestCompletionTime = std::chrono::steady_clock::now();
-        deltaTime += latestCompletionTime - lastCompletionTime;
-        lastCompletionTime = latestCompletionTime;
-        if (deltaTime < intervalBetweenUpdates)
-        {
-            continue;
-        }
+        auto latestFrameTime = std::chrono::steady_clock::now();
+        const auto deltaTime = latestFrameTime - lastFrameTime;
+        lastFrameTime = latestFrameTime;
 
-        const auto hz = 60.0 * deltaTime.count();
-        FetchDecodeExecute(chip8, keypad, params, hz);
-        Draw(chip8.display, window);
-        // Prevent time drift
-        deltaTime -= intervalBetweenUpdates;
+        cpuTime += deltaTime;
+        drawTime += deltaTime;
+
+        while (cpuTime >= intervalBetweenUpdates)
+        {
+            const auto timerHz = intervalBetweenUpdates.count() * sixtyHz;
+            FetchDecodeExecute(chip8, keypad, params, timerHz);
+            cpuTime -= intervalBetweenUpdates;
+        }
+        while (drawTime >= intervalForHz)
+        {
+            Draw(chip8.display, window);
+            drawTime -= intervalForHz;
+        }
     }
 }
